@@ -2,7 +2,7 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
-
+const saltRounds = 10;
 // Đăng ký
 exports.register = async (req, res) => {
     try {
@@ -20,7 +20,7 @@ exports.register = async (req, res) => {
         }
 
         // Tạo người dùng mới
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
         const user = new User({ username, email, password: hashedPassword });
         await user.save();
 
@@ -49,19 +49,21 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
-        
+
         // Tìm người dùng trong cơ sở dữ liệu
         const user = await User.findOne({ email });
-        
+
         console.log('User found:', user); // Ghi log thông tin người dùng
-        
+
         if (!user) {
             return res.status(400).json({ message: 'Wrong email or password' });
         }
 
+        console.log('user password >>>>', password, user.password)
         // Kiểm tra mật khẩu
         const isMatch = await bcrypt.compare(password, user.password); // So sánh mật khẩu
 
+        console.log('log >>>', isMatch)
         if (!isMatch) {
             return res.status(400).json({ message: 'Wrong email or password' });
         }
