@@ -1,8 +1,8 @@
 import express from "express";
-import apiController from '../controller/apiController';
+import authenticationController from '../controller/authenticationController';
 import userController from "../controller/userController";
 import groupController from '../controller/groupController';
-import { checkUserJWT, checkUserPermission, checkVerifyServerToken } from '../middleware/JWTAction';
+import { checkUserJWT, checkUserPermission } from '../middleware/JWTAction';
 import roleController from '../controller/roleController';
 
 const router = express.Router();
@@ -20,13 +20,11 @@ const initApiRoutes = (app) => {
     //GET - R, POST- C, PUT - U, DELETE - D
 
     router.all('*', checkUserJWT, checkUserPermission);
-    
-    router.post("/verify-server-token", checkVerifyServerToken)
-    router.post("/register", apiController.handleRegister);
-    router.post("/login", apiController.handleLogin);
-    router.post("/logout", apiController.handleLogout);
 
-    router.get("/account", userController.getUserAccount);
+    router.post("/register", authenticationController.handleRegister);
+    router.post("/login", authenticationController.handleLogin);
+    router.post("/loginGoogle", authenticationController.handleGoogleLogin);
+    router.post("/logout", authenticationController.handleLogout);
 
     //user routes
     router.get("/user/read", userController.readFunc);

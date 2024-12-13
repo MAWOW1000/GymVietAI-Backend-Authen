@@ -4,9 +4,9 @@ module.exports = {
     await queryInterface.createTable('User', {
       id: {
         allowNull: false,
-        autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4
       },
       firstName: {
         type: Sequelize.STRING
@@ -29,22 +29,28 @@ module.exports = {
       roleId: {
         type: Sequelize.INTEGER
       },
+      picture: {
+        type: Sequelize.STRING,
+        defaultValue: 'https://imgcdn.stablediffusionweb.com/2024/5/17/f5fb790b-36d9-4504-9ad0-d1142269fe98.jpg'
+      },
       refreshToken: {
         type: Sequelize.STRING
+      },
+      refreshTokenExpiresAt: {
+        type: Sequelize.DATE
       },
       codeResetPassword: {
         type: Sequelize.STRING
       },
-      typeLogin: {
-        type: Sequelize.STRING
-      },
       createdAt: {
         allowNull: false,
-        type: Sequelize.DATE
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.NOW
       },
       updatedAt: {
         allowNull: false,
-        type: Sequelize.DATE
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.NOW
       }
     });
   },

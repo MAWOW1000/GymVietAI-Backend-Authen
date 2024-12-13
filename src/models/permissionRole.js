@@ -16,7 +16,15 @@ module.exports = (sequelize, DataTypes) => {
   //object relational mapping
   Permission_Role.init({
     permissionId: DataTypes.INTEGER,
-    roleId: DataTypes.INTEGER
+    roleId: DataTypes.INTEGER,
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
+    },
   }, {
     sequelize,
     modelName: 'Permission_Role',

@@ -25,38 +25,36 @@ const checkEmailExist = async (userEmail) => {
 
 const registerNewUser = async (rawUserData) => {
     try {
-        //check email/phonenumber are exist
+        // Check if email exists
         let isEmailExist = await checkEmailExist(rawUserData.email);
-        if (isEmailExist === true) {
+        if (isEmailExist) {
             return {
-                EM: 'The email is already exist',
+                EM: 'The email already exists',
                 EC: 1
-            }
+            };
         }
 
-        //hash user password
+        // Hash user password
         let hashPassword = hashUserPassword(rawUserData.password);
 
-        //create new user
+        // Create new user with default roleID of 2
         await db.User.create({
             email: rawUserData.email,
-            username: rawUserData.username,
-            password: hashPassword,
-            phone: rawUserData.phone,
-            groupId: 4
-        })
+            password: hashPassword, // Only email and password are required
+            roleID: 2 // Default roleID
+        });
 
         return {
-            EM: 'A user is created successfully!',
-            EC: '0'
-        }
+            EM: 'User created successfully!',
+            EC: 0
+        };
 
     } catch (e) {
-        console.log(e)
+        console.log(e);
         return {
-            EM: 'Somthing wrongs in service...',
+            EM: 'Something went wrong in service.',
             EC: -2
-        }
+        };
     }
 }
 
@@ -67,30 +65,26 @@ const checkPassword = (inputPassword, hashPassword) => {
 const handleUserLogin = async (rawData) => {
     try {
         let user = await db.User.findOne({
-            where: { email: rawData.valueLogin },
+            where: { email: rawData.email },
             raw: true
         })
 
         if (user) {
-            // let isCorrectPassword = checkPassword(rawData.password, user.password);
-            let isCorrectPassword = true;
+            let isCorrectPassword = checkPassword(rawData.password, user.password);
             if (isCorrectPassword === true) {
-                let RoleWithPermission = await getRoleWithPermission(user);
-                console.log('check >> ', user, user.password, rawData.password)
-                const code1 = uuidv4();
                 return {
-                    EM: 'ok!',
+                    EM: 'Login successful! Welcome back!',
                     EC: 0,
                     DT: {
                         email: user.email,
-                        code1: code1,
-                        RoleWithPermission,
-                        username: user.username
+                        role: user.roleID,
+                        firstName: user.firstName,
+                        lastName: user.lastName,
+                        picture: user.picture,
                     }
                 }
             }
         }
-
 
         return {
             EM: 'Your email/phone number or password is incorrect!',
@@ -98,29 +92,29 @@ const handleUserLogin = async (rawData) => {
             DT: ''
         }
 
-
     } catch (error) {
         console.log(error)
         return {
-            EM: 'Somthing wrongs in service...',
+            EM: 'Something went wrong in service!',
             EC: -2
         }
     }
 }
 
-const upsertUserSocialMedia = async (typeAcc, dataRaw) => {
+const upsertUserSocialMedia = async (dataRaw) => {
     try {
         let user = null
         user = await db.User.findOne({
-            where: { email: dataRaw?.email ?? dataRaw?.facebookId, typeLogin: typeAcc },
+            where: { email: dataRaw?.email },
             raw: true
         })
         if (!user) {
             user = await db.User.create({
-                email: dataRaw?.email ?? dataRaw?.facebookId,
-                firstName: dataRaw.displayName.split(' ')[0],
-                lastName: dataRaw.displayName.split(' ')[1],
-                typeLogin: typeAcc
+                email: dataRaw?.email,
+                firstName: dataRaw.given_name,
+                lastName: dataRaw.family_name,
+                picture: dataRaw.picture,
+                roleId: 2
             })
         }
         return user
@@ -129,6 +123,34 @@ const upsertUserSocialMedia = async (typeAcc, dataRaw) => {
     }
 }
 
+const upsertRefreshToken = async (email, token, expiresAt) => {
+    try {
+        let [user, created] = await db.User.findOrCreate({
+            where: { email: email },
+            defaults: { refreshToken: token, refreshTokenExpiresAt: expiresAt }
+        });
+
+        if (!created) {
+            await user.update({
+                refreshToken: token,
+                refreshTokenExpiresAt: expiresAt
+            });
+        }
+
+        return {
+            EM: created ? 'User created successfully' : 'User updated successfully',
+            EC: 0,
+            DT: ''
+        };
+    } catch (e) {
+        console.log(e);
+        return {
+            EM: 'something wrongs with services',
+            EC: 1,
+            DT: []
+        }
+    }
+}
 module.exports = {
-    registerNewUser, handleUserLogin, hashUserPassword, checkEmailExist, upsertUserSocialMedia
+    registerNewUser, handleUserLogin, hashUserPassword, checkEmailExist, upsertUserSocialMedia, upsertRefreshToken
 }

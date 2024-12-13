@@ -16,6 +16,12 @@ module.exports = (sequelize, DataTypes) => {
   };
   //object relational mapping
   User.init({
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+      allowNull: false
+    },
     email: DataTypes.STRING,
     password: DataTypes.STRING,
     firstName: DataTypes.STRING,
@@ -24,11 +30,20 @@ module.exports = (sequelize, DataTypes) => {
     dateOfBirth: DataTypes.DATE,
     roleId: DataTypes.INTEGER,
     refreshToken: DataTypes.STRING,
-    codeResetPassword: DataTypes.STRING,
-    typeLogin: {
+    refreshTokenExpiresAt: DataTypes.DATE,
+    picture: {
       type: DataTypes.STRING,
-      defaultValue: 'LOCAL'
-    }
+      defaultValue: 'https://imgcdn.stablediffusionweb.com/2024/5/17/f5fb790b-36d9-4504-9ad0-d1142269fe98.jpg'
+    },
+    codeResetPassword: DataTypes.STRING,
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
+    },
   }, {
     sequelize,
     modelName: 'User',
