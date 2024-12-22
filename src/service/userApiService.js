@@ -1,5 +1,5 @@
 import db from '../models/index';
-import { checkEmailExist, checkPhoneExist, hashUserPassword } from './loginRegisterService';
+import { checkEmailExist, checkPhoneExist, hashUserPassword } from './authService';
 
 const getAllUser = async () => {
     try {
