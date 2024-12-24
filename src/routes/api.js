@@ -25,7 +25,7 @@ const initApiRoutes = (app) => {
     router.post('/resetPassword', authController.handleResetPassword);
 
     //Other service call to validate user
-    router.get('/validateUser', authController.handleValidateUser);
+    router.post('/validateUser', authController.handleValidateUser);
 
     // User routes
     router.get('/user/read', userController.readFunc);

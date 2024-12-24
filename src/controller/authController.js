@@ -15,7 +15,7 @@ const testApi = (req, res) => {
 };
 
 const handleValidateUser = async (req, res) => {
-    console.log('validated user');
+    console.log('Validate user');
     return res.status(200).json({
         EC: 0,
         EM: 'Success',
@@ -152,14 +152,12 @@ const handleGoogleLogin = async (req, res) => {
 
         // Set cookies
         res.cookie('access-token', jwtAccessToken.DT, {
-            maxAge: parseInt(process.env.JWT_EXPIRES_IN), // Convert to milliseconds
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production'
+            maxAge: 3600000, // 1 hour
+            httpOnly: true
         });
         res.cookie('refresh-token', uuidRefreshToken.DT, {
             maxAge: parseInt(process.env.REFRESH_TOKEN_EXPIRES_IN), // Already in milliseconds
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production'
+            httpOnly: true
         });
 
         // Return success response
@@ -237,14 +235,12 @@ const handleLogin = async (req, res) => {
 
             // Set cookies
             res.cookie('access-token', jwtAccessToken.DT, {
-                maxAge: parseInt(process.env.JWT_EXPIRES_IN), // Convert to milliseconds
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production'
+                maxAge: 3600000, // 1 hour
+                httpOnly: true
             });
             res.cookie('refresh-token', uuidRefreshToken.DT, {
                 maxAge: parseInt(process.env.REFRESH_TOKEN_EXPIRES_IN), // Already in milliseconds
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production'
             });
 
             // Fixed response data using data.DT instead of userSocialMedia

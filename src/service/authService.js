@@ -230,10 +230,48 @@ const createJWT = async (payload) => {
 
 const verifyToken = async (access_token, refresh_token) => {
     try {
-        // Check refresh token in database
+        // First verify access token
+        let decoded;
+        try {
+            decoded = jwt.verify(access_token, process.env.JWT_SECRET);
+        } catch (error) {
+            // If access token is invalid, check if refresh token is valid   
+            console.log('Error:', error);
+            if (error.name === "TokenExpiredError") {
+                // Check refresh token when access token expires
+                const user = await db.User.findOne({
+                    where: {
+                        refreshToken: refresh_token,
+                        refreshTokenExpiresAt: {
+                            [Op.gt]: new Date()
+                        }
+                    }
+                });
+
+                if (!user) {
+                    return {
+                        EM: 'Both tokens have expired. Please login again.',
+                        EC: 3, // New error code for both tokens expired
+                        DT: null
+                    };
+                }
+
+                return {
+                    EM: 'Access token has expired, but refresh token is valid',
+                    EC: 1,
+                    DT: { email: user.email }
+                };
+            }
+            console.error('Token creation failed');
+            return {
+                EM: 'Invalid access token',
+                EC: -1,
+                DT: null
+            };
+        }
+        // Then verify refresh token
         const user = await db.User.findOne({
             where: {
-                email: decoded.email,
                 refreshToken: refresh_token,
                 refreshTokenExpiresAt: {
                     [Op.gt]: new Date()
@@ -243,45 +281,24 @@ const verifyToken = async (access_token, refresh_token) => {
 
         if (!user) {
             return {
-                EM: 'Refresh token invalid or expired',
-                EC: 2,
+                EM: 'Refresh token invalid or expired. Please login again.',
+                EC: 3,
                 DT: null
             };
         }
 
-        try {
-            const decoded = jwt.verify(access_token, process.env.JWT_SECRET);
-            if (!decoded) {
-                return {
-                    EM: 'Invalid token',
-                    EC: -1,
-                    DT: null
-                };
-            }
-        } catch (error) {
-            if (error.name === "TokenExpiredError") {
-                return {
-                    EM: 'Access token has expired',
-                    EC: 1,
-                    DT: null
-                };
-            }
-            return {
-                EM: 'Invalid token',
-                EC: -1,
-                DT: null
-            };
-        }
+        // Both tokens are valid
         return {
-            EM: 'Token verified successfully',
+            EM: 'Token verification successful',
             EC: 0,
             DT: {
-                access_token: access_token,
-                refresh_token: refresh_token
+                access_token,
+                refresh_token
             }
         };
 
     } catch (error) {
+        console.error('Token verification error:', error);
         return {
             EM: 'Error verifying token',
             EC: -1,

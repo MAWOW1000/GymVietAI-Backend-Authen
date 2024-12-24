@@ -7,49 +7,68 @@ import authService from '../service/authService';
 const nonSecurePaths = ['/login', '/loginGoogle', '/register', '/sendOTP', '/resetPassword', '/logout'];
 
 const checkUserJWT = async (req, res, next) => {
-    if (nonSecurePaths.includes(req.path)) return next();
-    let cookies = req.cookies;
+    try {
+        if (nonSecurePaths.includes(req.path)) return next();
 
-    if ((cookies && cookies['access-token'] && cookies['refresh-token'])) {
-        let access_token = cookies['access-token'];
-        let refresh_token = cookies['refresh-token'];
-        let decoded = authService.verifyToken(access_token, refresh_token);
-        if (decoded?.EC === 0) {
-            next();
-        }
-        else if (decoded.EC === 1) {
-            const data = await updateCookies(refresh_token)
-            if (data.EC === 0) {
-                res.cookie('access-token', data.DT.access_token,
-                    { maxAge: process.env.JWT_EXPIRES_IN, httpOnly: true }
-                )
-                res.cookie('refresh-token', data.DT.refresh_token, {
-                    maxAge: process.env.REFRESH_TOKEN_EXPIRES_IN, httpOnly: true
-                })
-            }
-            else {
-                return res.status(433).json({
-                    EC: -1,
-                    DT: '',
-                    EM: 'Not authenticated the user'
-                })
-            }
-        } else {
+        const cookies = req.cookies;
+        if (!cookies || !cookies['access-token'] || !cookies['refresh-token']) {
             return res.status(401).json({
                 EC: -1,
                 DT: '',
-                EM: 'Not authenticated the user'
-            })
+                EM: 'No authentication tokens found'
+            });
         }
-    }
-    else {
+
+        const access_token = cookies['access-token'];
+        const refresh_token = cookies['refresh-token'];
+        const verifyResult = await authService.verifyToken(access_token, refresh_token);
+
+        if (verifyResult.EC === 0) {
+            // Token còn hạn
+            return next();
+        }
+
+        if (verifyResult.EC === 1) {
+            // Access token hết hạn nhưng refresh token còn hạn
+            const newTokens = await authService.updateCookies(refresh_token);
+            if (newTokens.EC === 0) {
+                // Set cookie mới với access token mới
+                res.cookie('access-token', newTokens.DT.access_token, {
+                    maxAge: 3600000, // 1 hour
+                    httpOnly: true
+                });
+                req.user = newTokens.DT.user;
+                return next();
+            }
+        }
+
+        // Chỉ xóa cookies khi cả access và refresh đều hết hạn
+        if (verifyResult.EC === 3) {
+            res.clearCookie('access-token');
+            res.clearCookie('refresh-token');
+            return res.status(401).json({
+                EC: 3,
+                DT: '',
+                EM: 'Session expired. Please login again.'
+            });
+        }
+
+        // Các trường hợp lỗi khác không xóa cookie
         return res.status(401).json({
             EC: -1,
             DT: '',
-            EM: 'Not authenticated the user'
-        })
+            EM: verifyResult.EM || 'Authentication failed'
+        });
+
+    } catch (error) {
+        console.error('Authentication error:', error);
+        return res.status(500).json({
+            EC: -1,
+            DT: '',
+            EM: 'Internal server error during authentication'
+        });
     }
-}
+};
 
 const checkUserPermission = (req, res, next) => {
     if (nonSecurePaths.includes(req.path)) return next();
