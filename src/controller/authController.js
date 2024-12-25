@@ -128,6 +128,7 @@ const handleGoogleLogin = async (req, res) => {
         // Generate tokens
         const payload = {
             email: data.email,
+            id: uuidv4()
         };
         const jwtAccessToken = await authService.createJWT(payload);
         if (jwtAccessToken.EC !== 0) {
@@ -211,6 +212,7 @@ const handleLogin = async (req, res) => {
         if (data.EC === 0) {
             const payload = {
                 email: data.DT.email,
+                id: uuidv4()
             };
             const jwtAccessToken = await authService.createJWT(payload);
             if (jwtAccessToken.EC !== 0) {
@@ -289,50 +291,6 @@ const handleLogout = async (req, res) => {
         return res.status(500).json({
             EM: 'Error during logout process',
             EC: '-1',
-            DT: null
-        });
-    }
-};
-
-const handleVerifyToken = async (req, res) => {
-    try {
-        const ssoToken = req.body.ssoToken;
-        const refreshToken = uuidv4();
-        const payload = {
-            email: req.user.email,
-            username: req.user.username,
-        };
-        const token = authService.createJWT(payload);
-        const reqDefault = {
-            jwt: token,
-            refreshToken,
-            email: req.user.email,
-            username: req.user.username,
-        };
-        await updateRefreshToken(payload.email, refreshToken);
-        req.user.access_token = token;
-        req.session.destroy((err) => {
-            req.logout();
-        });
-        if (req.user && req.user.code1 && req.user.code1 === ssoToken) {
-            res.cookie('access-token', token, { maxAge: 3000000, httpOnly: true });
-            res.cookie('refresh-token', refreshToken);
-            return res.status(200).json({
-                EC: 0,
-                EM: 'Success',
-                DT: reqDefault
-            });
-        } else {
-            return res.status(401).json({
-                EC: 1,
-                EM: 'Limit session or session invalid',
-                DT: null
-            });
-        }
-    } catch (err) {
-        return res.status(500).json({
-            EC: -1,
-            EM: 'Internal server error',
             DT: null
         });
     }
@@ -499,7 +457,6 @@ module.exports = {
     handleLogin,
     handleLogout,
     handleGoogleLogin,
-    handleVerifyToken,
     hanleResendCode,
     handleResetPassword,
     handleValidateUser

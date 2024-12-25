@@ -1,9 +1,8 @@
-import userApiService from '../service/userApiService';
-import roleApiService from '../service/roleApiService';
+import permissionApiService from '../service/permissionApiService';
 
 const readFunc = async (req, res) => {
     try {
-        let data = await roleApiService.getAllRoles();
+        let data = await permissionApiService.getAllPermissions();
         return res.status(200).json({
             EM: data.EM,
             EC: data.EC,
@@ -21,7 +20,7 @@ const readFunc = async (req, res) => {
 
 const createFunc = async (req, res) => {
     try {
-        let data = await roleApiService.createNewRoles(req.body);
+        let data = await permissionApiService.createNewPermission(req.body);
         return res.status(200).json({
             EM: data.EM,
             EC: data.EC,
@@ -39,7 +38,7 @@ const createFunc = async (req, res) => {
 
 const updateFunc = async (req, res) => {
     try {
-        let data = await roleApiService.updateRole(req.body);
+        let data = await permissionApiService.updatePermission(req.body);
         return res.status(200).json({
             EM: data.EM,
             EC: data.EC,
@@ -57,7 +56,7 @@ const updateFunc = async (req, res) => {
 
 const deleteFunc = async (req, res) => {
     try {
-        let data = await roleApiService.deleteRole(req.body.id);
+        let data = await permissionApiService.deletePermission(req.body.id);
         return res.status(200).json({
             EM: data.EM,
             EC: data.EC,
@@ -73,50 +72,9 @@ const deleteFunc = async (req, res) => {
     }
 }
 
-const getRoleByGroup = async (req, res) => {
-    try {
-        let id = req.params.groupId;
-        let data = await roleApiService.getRoleByGroup(id);
-        return res.status(200).json({
-            EM: data.EM, // error message
-            EC: data.EC, //error code
-            DT: data.DT, //data
-        })
-
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({
-            EM: 'error from server', // error message
-            EC: '-1', //error code
-            DT: '', //date
-        })
-    }
-}
-
-const assignRoleToGroup = async (req, res) => {
-    try {
-        let data = await roleApiService.assignRoleToGroup(req.body.data);
-        return res.status(200).json({
-            EM: data.EM, // error message
-            EC: data.EC, //error code
-            DT: data.DT, //data
-        })
-
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({
-            EM: 'error from server', // error message
-            EC: '-1', //error code
-            DT: '', //date
-        })
-    }
-}
-
 module.exports = {
     readFunc,
     createFunc,
     updateFunc,
-    deleteFunc,
-    getRoleByGroup,
-    assignRoleToGroup
+    deleteFunc
 }

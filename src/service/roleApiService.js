@@ -1,35 +1,29 @@
 import db from '../models/index';
 
-const createNewRoles = async (roles) => {
+const createNewRoles = async (roleData) => {
     try {
+        const { name, description, permissions } = roleData;
+        
+        // Create new role
+        const newRole = await db.Role.create({
+            name,
+            description
+        });
 
-        let currentRoles = await db.Role.findAll({
-            attributes: ['url', 'description'],
-            raw: true
-        })
-
-        const persists = roles.filter(({ url: url1 }) =>
-            !currentRoles.some(({ url: url2 }) => url1 === url2)
-        );
-        if (persists.length === 0) {
-            return {
-                EM: 'Nothing to create ...',
-                EC: 0,
-                DT: []
-            }
+        // Associate permissions if provided
+        if (permissions && permissions.length > 0) {
+            await newRole.setPermissions(permissions);
         }
 
-        await db.Role.bulkCreate(persists);
         return {
-            EM: `Create roles succeeds:  ${persists.length} roles...`,
+            EM: 'Create role successfully',
             EC: 0,
-            DT: []
+            DT: newRole
         }
-
     } catch (error) {
-        console.log(error)
+        console.log(error);
         return {
-            EM: 'something wrongs with servies',
+            EM: 'Something wrong with service',
             EC: 1,
             DT: []
         }
@@ -38,19 +32,60 @@ const createNewRoles = async (roles) => {
 
 const getAllRoles = async () => {
     try {
-        let data = await db.Role.findAll({
+        let roles = await db.Role.findAll({
+            include: {
+                model: db.Permission,
+                as: 'Permissions',
+                through: { attributes: [] }
+            },
             order: [['id', 'DESC']]
-        })
+        });
+
         return {
-            EM: `Get all Roles succeeds`,
+            EM: 'Get all roles successfully',
             EC: 0,
-            DT: data
+            DT: roles
+        }
+    } catch (error) {
+        console.log(error);
+        return {
+            EM: 'Something wrong with service',
+            EC: 1,
+            DT: []
+        }
+    }
+}
+
+const updateRole = async (roleData) => {
+    try {
+        const { id, name, description, permissions } = roleData;
+        
+        const role = await db.Role.findByPk(id);
+        if (!role) {
+            return {
+                EM: 'Role not found',
+                EC: 2,
+                DT: []
+            }
         }
 
-    } catch (error) {
-        console.log(error)
+        // Update role details
+        await role.update({ name, description });
+
+        // Update permissions
+        if (permissions) {
+            await role.setPermissions(permissions);
+        }
+
         return {
-            EM: 'something wrongs with servies',
+            EM: 'Update role successfully',
+            EC: 0,
+            DT: role
+        }
+    } catch (error) {
+        console.log(error);
+        return {
+            EM: 'Something wrong with service',
             EC: 1,
             DT: []
         }
@@ -59,82 +94,29 @@ const getAllRoles = async () => {
 
 const deleteRole = async (id) => {
     try {
-        let role = await db.Role.findOne({
-            where: { id: id }
-        })
-        if (role) {
-            await role.destroy();
-        }
-
-        return {
-            EM: `Delete Roles succeeds`,
-            EC: 0,
-            DT: []
-        }
-
-    } catch (error) {
-        console.log(error)
-        return {
-            EM: 'something wrongs with servies',
-            EC: 1,
-            DT: []
-        }
-    }
-}
-
-const getRoleByGroup = async (id) => {
-    try {
-        if (!id) {
+        const role = await db.Role.findByPk(id);
+        if (!role) {
             return {
-                EM: `Not found any roles`,
-                EC: 0,
+                EM: 'Role not found',
+                EC: 2,
                 DT: []
             }
         }
 
-        let roles = await db.Group.findOne({
-            where: { id: id },
-            attributes: ["id", "name", "description"],
-            include: {
-                model: db.Role,
-                attributes: ["id", "url", "description"],
-                through: { attributes: [] }
-            }
-        })
+        // Remove role-permission associations first
+        await role.setPermissions([]);
+        // Delete the role
+        await role.destroy();
 
         return {
-            EM: `get Roles by group succeeds`,
-            EC: 0,
-            DT: roles
-        }
-
-    } catch (error) {
-        console.log(error)
-        return {
-            EM: 'something wrongs with servies',
-            EC: 1,
-            DT: []
-        }
-    }
-}
-
-const assignRoleToGroup = async (data) => {
-    try {
-
-        await db.Group_Role.destroy({
-            where: { groupId: +data.groupId }
-        })
-        await db.Group_Role.bulkCreate(data.groupRoles);
-        return {
-            EM: `Assign Role to Group succeeds`,
+            EM: 'Delete role successfully',
             EC: 0,
             DT: []
         }
-
     } catch (error) {
-        console.log(error)
+        console.log(error);
         return {
-            EM: 'something wrongs with servies',
+            EM: 'Something wrong with service',
             EC: 1,
             DT: []
         }
@@ -142,5 +124,8 @@ const assignRoleToGroup = async (data) => {
 }
 
 module.exports = {
-    createNewRoles, getAllRoles, deleteRole, getRoleByGroup, assignRoleToGroup
+    createNewRoles,
+    getAllRoles,
+    updateRole,
+    deleteRole
 }

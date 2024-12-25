@@ -117,7 +117,6 @@ const handleUserLogin = async (rawData) => {
             where: { email: rawData.email },
             raw: true
         })
-
         if (user) {
             let isCorrectPassword = checkPassword(rawData.password, user.password);
             if (isCorrectPassword === true) {
@@ -173,7 +172,6 @@ const upsertUserSocialMedia = async (dataRaw) => {
                 picture: dataRaw.picture
             });
         }
-
         return {
             EM: 'Upsert successful!',
             EC: 0,
@@ -293,7 +291,8 @@ const verifyToken = async (access_token, refresh_token) => {
             EC: 0,
             DT: {
                 access_token,
-                refresh_token
+                refresh_token,
+                email: user.email
             }
         };
 
@@ -313,14 +312,8 @@ const updateCookies = async (refresh_token) => {
             where: { refreshToken: refresh_token }
         })
         if (user) {
-            // Get permission data
-            const roleWithPermissions = await getRoleWithPermission(user);
-            const permission = roleWithPermissions?.Permissions || [];
-
             const payload = {
                 email: user.email,
-                username: user.username,
-                permission: permission
             }
             const access_token = await createJWT(payload)
             const refresh_token = uuidv4();
@@ -332,7 +325,8 @@ const updateCookies = async (refresh_token) => {
                 EC: 0,
                 DT: {
                     access_token: access_token,
-                    refresh_token: refresh_token
+                    refresh_token: refresh_token,
+                    email: user.email
                 }
             }
         } else {

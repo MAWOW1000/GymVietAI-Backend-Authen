@@ -27,7 +27,11 @@ module.exports = {
         type: Sequelize.DATE
       },
       roleId: {
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
+        references: {
+          model: 'Role',
+          key: 'id'
+        }
       },
       picture: {
         type: Sequelize.STRING,
@@ -41,6 +45,45 @@ module.exports = {
       },
       codeResetPassword: {
         type: Sequelize.STRING
+      },
+      createdWorkoutPlans: {
+        type: Sequelize.TEXT,
+        defaultValue: '[]',
+        allowNull: true,
+        get() {
+          const value = this.getDataValue('createdWorkoutPlans');
+          return value ? JSON.parse(value) : [];
+        },
+        set(value) {
+          this.setDataValue('createdWorkoutPlans', JSON.stringify(value));
+        }
+      },
+      createdNutritionPlans: {
+        type: Sequelize.TEXT,
+        defaultValue: '[]',
+        allowNull: true,
+        get() {
+          const value = this.getDataValue('createdNutritionPlans');
+          return value ? JSON.parse(value) : [];
+        },
+        set(value) {
+          this.setDataValue('createdNutritionPlans', JSON.stringify(value));
+        }
+      },
+      workoutPlanCount: {
+        type: Sequelize.INTEGER,
+        defaultValue: 0,
+        allowNull: false
+      },
+      nutritionPlanCount: {
+        type: Sequelize.INTEGER,
+        defaultValue: 0,
+        allowNull: false
+      },
+      chatCount: {
+        type: Sequelize.INTEGER,
+        defaultValue: 0,
+        allowNull: false
       },
       createdAt: {
         allowNull: false,

@@ -11,7 +11,10 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      User.belongsTo(models.Role);
+      User.belongsTo(models.Role, {
+        foreignKey: 'roleId',  // Chỉ định rõ tên cột foreign key
+        as: 'Role'  // Đặt alias để tránh conflict
+      });
     }
   };
   //object relational mapping
@@ -36,6 +39,40 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 'https://imgcdn.stablediffusionweb.com/2024/5/17/f5fb790b-36d9-4504-9ad0-d1142269fe98.jpg'
     },
     codeResetPassword: DataTypes.STRING,
+    createdWorkoutPlans: {
+      type: DataTypes.TEXT,
+      defaultValue: '[]',
+      get() {
+        const value = this.getDataValue('createdWorkoutPlans');
+        return value ? JSON.parse(value) : [];
+      },
+      set(value) {
+        this.setDataValue('createdWorkoutPlans', JSON.stringify(value));
+      }
+    },
+    createdNutritionPlans: {
+      type: DataTypes.TEXT,
+      defaultValue: '[]',
+      get() {
+        const value = this.getDataValue('createdNutritionPlans');
+        return value ? JSON.parse(value) : [];
+      },
+      set(value) {
+        this.setDataValue('createdNutritionPlans', JSON.stringify(value));
+      }
+    },
+    workoutPlanCount: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    nutritionPlanCount: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    chatCount: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
     createdAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW

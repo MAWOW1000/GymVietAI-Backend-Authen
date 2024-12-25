@@ -1,89 +1,222 @@
 import userApiService from '../service/userApiService';
+import userService from '../service/userApiService';
 
 const readFunc = async (req, res) => {
     try {
         if (req.query.page && req.query.limit) {
-            let page = req.query.page;
-            let limit = req.query.limit;
-            let data = await userApiService.getUserWithPagination(+page, +limit);
+            let page = parseInt(req.query.page);
+            let limit = parseInt(req.query.limit);
+
+            if (isNaN(page) || isNaN(limit) || page < 1 || limit < 1) {
+                return res.status(400).json({
+                    EM: 'Invalid pagination parameters',
+                    EC: 1,
+                    DT: null
+                });
+            }
+
+            let data = await userApiService.getUsersWithPagination(page, limit);
             return res.status(200).json({
-                EM: data.EM, // error message
-                EC: data.EC, //error code
-                DT: data.DT, //data
-            })
+                EM: data.EM,
+                EC: data.EC,
+                DT: data.DT
+            });
         } else {
-            let data = await userApiService.getAllUser();
+            let data = await userApiService.getAllUsers();
             return res.status(200).json({
-                EM: data.EM, // error message
-                EC: data.EC, //error code
-                DT: data.DT, //data
-            })
+                EM: data.EM,
+                EC: data.EC,
+                DT: data.DT
+            });
         }
-    } catch (e) {
-        console.log(e);
+    } catch (error) {
+        console.log('Error in readFunc:', error);
         return res.status(500).json({
-            EM: 'error from server', // error message
-            EC: '-1', //error code
-            DT: '', //date
-        })
+            EM: 'Error from server',
+            EC: -1,
+            DT: null
+        });
     }
 }
+
 const createFunc = async (req, res) => {
     try {
-        //validate
-        let data = await userApiService.createNewUser(req.body);
+        let data = req.body;
+
+        if (!data.email || !data.password) {
+            return res.status(400).json({
+                EM: 'Missing required fields',
+                EC: 1,
+                DT: null
+            });
+        }
+
+        let result = await userApiService.createNewUser(data);
         return res.status(200).json({
-            EM: data.EM, // error message
-            EC: data.EC, //error code
-            DT: data.DT, //data
-        })
+            EM: result.EM,
+            EC: result.EC,
+            DT: result.DT
+        });
     } catch (error) {
-        console.log(error);
+        console.log('Error in createFunc:', error);
         return res.status(500).json({
-            EM: 'error from server', // error message
-            EC: '-1', //error code
-            DT: '', //date
-        })
+            EM: 'Error from server',
+            EC: -1,
+            DT: null
+        });
     }
 }
+
 const updateFunc = async (req, res) => {
     try {
-        //validate
-        let data = await userApiService.updateUser(req.body);
+        let data = req.body;
+
+        if (!data.id) {
+            return res.status(400).json({
+                EM: 'Missing user ID',
+                EC: 1,
+                DT: null
+            });
+        }
+
+        let result = await userApiService.updateUser(data);
         return res.status(200).json({
-            EM: data.EM, // error message
-            EC: data.EC, //error code
-            DT: data.DT, //data
-        })
+            EM: result.EM,
+            EC: result.EC,
+            DT: result.DT
+        });
     } catch (error) {
-        console.log(error);
+        console.log('Error in updateFunc:', error);
         return res.status(500).json({
-            EM: 'error from server', // error message
-            EC: '-1', //error code
-            DT: '', //date
-        })
+            EM: 'Error from server',
+            EC: -1,
+            DT: null
+        });
     }
 }
+
 const deleteFunc = async (req, res) => {
     try {
-        let data = await userApiService.deleteUser(req.body.id);
-        return res.status(200).json({
-            EM: data.EM, // error message
-            EC: data.EC, //error code
-            DT: data.DT, //data
-        })
+        let { id } = req.body;
 
+        if (!id) {
+            return res.status(400).json({
+                EM: 'Missing user ID',
+                EC: 1,
+                DT: null
+            });
+        }
+
+        let result = await userApiService.deleteUser(id);
+        return res.status(200).json({
+            EM: result.EM,
+            EC: result.EC,
+            DT: result.DT
+        });
     } catch (error) {
-        console.log(error);
+        console.log('Error in deleteFunc:', error);
         return res.status(500).json({
-            EM: 'error from server', // error message
-            EC: '-1', //error code
-            DT: '', //date
-        })
+            EM: 'Error from server',
+            EC: -1,
+            DT: null
+        });
     }
 }
 
+const addExerciseFunc = async (req, res) => {
+    try {
+        const email = req.user.email;
+        const workoutPlanId = req.body.workout_plan_id;
+
+        if (!email || !workoutPlanId) {
+            return res.status(400).json({
+                EM: 'Missing email or workout plan ID',
+                EC: 1,
+                DT: null
+            });
+        }
+
+        const data = await userService.addExercise(email, workoutPlanId);
+
+        return res.status(data.EC === 0 ? 200 : 400).json({
+            EM: data.EM,
+            EC: data.EC,
+            DT: data.DT
+        });
+    } catch (error) {
+        console.error('Add exercise error:', error);
+        return res.status(500).json({
+            EM: 'Error from server',
+            EC: -1,
+            DT: null
+        });
+    }
+};
+
+const addMealPlanFunc = async (req, res) => {
+    try {
+        const email = req.user.email;
+        const mealPlanId = req.body.meal_plan_id;
+
+        if (!email || !mealPlanId) {
+            return res.status(400).json({
+                EM: 'Missing email or meal plan ID',
+                EC: 1,
+                DT: null
+            });
+        }
+
+        const data = await userService.addMealPlan(email, mealPlanId);
+
+        return res.status(data.EC === 0 ? 200 : 400).json({
+            EM: data.EM,
+            EC: data.EC,
+            DT: data.DT
+        });
+    } catch (error) {
+        console.error('Add meal plan error:', error);
+        return res.status(500).json({
+            EM: 'Error from server',
+            EC: -1,
+            DT: null
+        });
+    }
+};
+
+const getUserByEmailFunc = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                EM: 'Missing email in request body',
+                EC: 1,
+                DT: null
+            });
+        }
+
+        let result = await userApiService.getUserByEmail(email);
+        return res.status(200).json({
+            EM: result.EM,
+            EC: result.EC,
+            DT: result.DT
+        });
+    } catch (error) {
+        console.log('Error in getUserByEmailFunc:', error);
+        return res.status(500).json({
+            EM: 'Error from server',
+            EC: -1,
+            DT: null
+        });
+    }
+}
 
 module.exports = {
-    readFunc, createFunc, updateFunc, deleteFunc
+    readFunc,
+    createFunc,
+    updateFunc,
+    deleteFunc,
+    addExerciseFunc,
+    addMealPlanFunc,
+    getUserByEmailFunc
 }

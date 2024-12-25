@@ -19,12 +19,15 @@ const checkUserJWT = async (req, res, next) => {
             });
         }
 
+        // Initialize req.user
+        req.user = {};
+
         const access_token = cookies['access-token'];
         const refresh_token = cookies['refresh-token'];
         const verifyResult = await authService.verifyToken(access_token, refresh_token);
-
         if (verifyResult.EC === 0) {
             // Token còn hạn
+            req.user.email = verifyResult.DT.email;
             return next();
         }
 
@@ -37,7 +40,7 @@ const checkUserJWT = async (req, res, next) => {
                     maxAge: 3600000, // 1 hour
                     httpOnly: true
                 });
-                req.user = newTokens.DT.user;
+                req.user.email = newTokens.DT.email;
                 return next();
             }
         }
@@ -70,37 +73,95 @@ const checkUserJWT = async (req, res, next) => {
     }
 };
 
-const checkUserPermission = (req, res, next) => {
+const checkUserPermission = async (req, res, next) => {
     if (nonSecurePaths.includes(req.path)) return next();
 
     if (req.user) {
-        let email = req.user.email;
-        let roles = req.user.groupWithRoles.Roles;
-        let currentUrl = req.path;
-        if (!roles || roles.length === 0) {
-            return res.status(403).json({
-                EC: -1,
-                DT: '',
-                EM: `you don't permission to access this resource...`
-            })
-        }
+        try {
+            // Get user with role and permissions
+            const user = await db.User.findOne({
+                where: { email: req.user.email },
+                include: {
+                    model: db.Role,
+                    as: 'Role',
+                    include: {
+                        model: db.Permission,
+                        as: 'Permissions',
+                        attributes: ['id', 'url']
+                    }
+                }
+            });
 
-        let canAccess = roles.some(item => item.url === currentUrl || currentUrl.includes(item.url));
-        if (canAccess === true) {
-            next();
-        } else {
-            return res.status(403).json({
+            if (!user) {
+                return res.status(403).json({
+                    EM: 'User not found',
+                    EC: -1,
+                    DT: []
+                });
+            }
+
+            const currentUrl = req?.body?.path;
+            console.log('Current URL:', currentUrl);
+
+            // Check if current URL matches permission for exercises or meal plans
+            const isWorkoutPlanCreation = user.Role.Permissions.some(
+                permission => permission.id === 8 && permission.url === currentUrl
+            );
+
+            const isNutritionPlanCreation = user.Role.Permissions.some(
+                permission => permission.id === 9 && permission.url === currentUrl
+            );
+
+            if (isWorkoutPlanCreation) {
+                if (user.roleId === 2 && user.workoutPlanCount >= 3) {
+                    return res.status(403).json({
+                        EM: 'Free users can only create up to 3 exercises plan, Please upgrade to premium to create more',
+                        EC: -1,
+                        DT: []
+                    });
+                }
+                await user.increment('workoutPlanCount', { by: 1 });
+            }
+
+            if (isNutritionPlanCreation) {
+                if (user.roleId === 2 && user.nutritionPlanCount >= 3) {
+                    return res.status(403).json({
+                        EM: 'Free users can only create up to 3 meal plans, Please upgrade to premium to create more',
+                        EC: -1,
+                        DT: []
+                    });
+                }
+                await user.increment('nutritionPlanCount', { by: 1 });
+            }
+
+            // Check general permission
+            const hasPermission = user.Role.Permissions.some(
+                permission => permission.url === currentUrl
+            );
+
+            if (!hasPermission) {
+                return res.status(403).json({
+                    EM: 'You do not have permission to access this resource',
+                    EC: -1,
+                    DT: []
+                });
+            }
+
+            return next();
+        } catch (error) {
+            console.error('Permission check error:', error);
+            return res.status(500).json({
+                EM: 'Error checking permissions',
                 EC: -1,
-                DT: '',
-                EM: `you don't permission to access this resource...`
-            })
+                DT: []
+            });
         }
     } else {
         return res.status(401).json({
+            EM: 'User not authenticated',
             EC: -1,
-            DT: '',
-            EM: 'Not authenticated the user'
-        })
+            DT: []
+        });
     }
 }
 
