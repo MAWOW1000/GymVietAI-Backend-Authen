@@ -123,7 +123,7 @@ const deleteFunc = async (req, res) => {
     }
 }
 
-const addExerciseFunc = async (req, res) => {
+const addWorkoutPlanFunc = async (req, res) => {
     try {
         const email = req.user.email;
         const workoutPlanId = req.body.workout_plan_id;
@@ -136,7 +136,7 @@ const addExerciseFunc = async (req, res) => {
             });
         }
 
-        const data = await userService.addExercise(email, workoutPlanId);
+        const data = await userService.addWorkoutPlan(email, workoutPlanId);
 
         return res.status(data.EC === 0 ? 200 : 400).json({
             EM: data.EM,
@@ -153,20 +153,20 @@ const addExerciseFunc = async (req, res) => {
     }
 };
 
-const addMealPlanFunc = async (req, res) => {
+const addNutritionPlanFunc = async (req, res) => {
     try {
         const email = req.user.email;
-        const mealPlanId = req.body.meal_plan_id;
+        const nutritionPlanId = req.body.nutrition_plan_id;
 
-        if (!email || !mealPlanId) {
+        if (!email || !nutritionPlanId) {
             return res.status(400).json({
-                EM: 'Missing email or meal plan ID',
+                EM: 'Missing email or nutrition plan ID',
                 EC: 1,
                 DT: null
             });
         }
 
-        const data = await userService.addMealPlan(email, mealPlanId);
+        const data = await userService.addNutritionPlan(email, nutritionPlanId);
 
         return res.status(data.EC === 0 ? 200 : 400).json({
             EM: data.EM,
@@ -216,7 +216,7 @@ module.exports = {
     createFunc,
     updateFunc,
     deleteFunc,
-    addExerciseFunc,
-    addMealPlanFunc,
+    addWorkoutPlanFunc,
+    addNutritionPlanFunc,
     getUserByEmailFunc
 }

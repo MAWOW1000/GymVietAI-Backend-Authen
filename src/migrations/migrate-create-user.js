@@ -46,6 +46,10 @@ module.exports = {
       codeResetPassword: {
         type: Sequelize.STRING
       },
+      otpExpiresAt: {  // Thêm trường mới
+        type: Sequelize.DATE,
+        allowNull: true
+      },
       createdWorkoutPlans: {
         type: Sequelize.TEXT,
         defaultValue: '[]',

@@ -11,6 +11,7 @@ const checkUserJWT = async (req, res, next) => {
         if (nonSecurePaths.includes(req.path)) return next();
 
         const cookies = req.cookies;
+        console.log(cookies);
         if (!cookies || !cookies['access-token'] || !cookies['refresh-token']) {
             return res.status(401).json({
                 EC: -1,
@@ -75,7 +76,6 @@ const checkUserJWT = async (req, res, next) => {
 
 const checkUserPermission = async (req, res, next) => {
     if (nonSecurePaths.includes(req.path)) return next();
-
     if (req.user) {
         try {
             // Get user with role and permissions
@@ -100,7 +100,7 @@ const checkUserPermission = async (req, res, next) => {
                 });
             }
 
-            const currentUrl = req?.body?.path;
+            const currentUrl = req?.body?.path || req?.path;
             console.log('Current URL:', currentUrl);
 
             // Check if current URL matches permission for exercises or meal plans
@@ -110,6 +110,10 @@ const checkUserPermission = async (req, res, next) => {
 
             const isNutritionPlanCreation = user.Role.Permissions.some(
                 permission => permission.id === 9 && permission.url === currentUrl
+            );
+
+            const isChatUsage = user.Role.Permissions.some(
+                permission => permission.id === 10 && permission.url === currentUrl
             );
 
             if (isWorkoutPlanCreation) {
@@ -132,6 +136,17 @@ const checkUserPermission = async (req, res, next) => {
                     });
                 }
                 await user.increment('nutritionPlanCount', { by: 1 });
+            }
+
+            if (isChatUsage) {
+                if (user.roleId === 2 && user.chatCount >= 10) {
+                    return res.status(403).json({
+                        EM: 'Free users can only use chat up to 10 times, Please upgrade to premium to chat more',
+                        EC: -10,
+                        DT: []
+                    });
+                }
+                await user.increment('chatCount', { by: 1 });
             }
 
             // Check general permission

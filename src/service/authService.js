@@ -33,28 +33,31 @@ const verifyAndClearOTP = async (email, otp) => {
         const user = await db.User.findOne({
             where: {
                 email: email,
-                codeResetPassword: otp
+                codeResetPassword: otp,
+                otpExpiresAt: {
+                    [Op.gt]: new Date() // Kiểm tra OTP còn hạn
+                }
             }
         });
 
-        // Clear OTP regardless of verification result
-        await db.User.update(
-            { codeResetPassword: null },
-            { where: { email: email } }
-        );
-
         if (!user) {
             return {
-                EM: 'Invalid OTP code',
+                EM: 'Invalid or expired OTP code',
                 EC: 1,
                 DT: null
             };
         }
 
+        // Clear OTP after successful verification
+        await user.update({
+            codeResetPassword: null,
+            otpExpiresAt: null
+        });
+
         return {
             EM: 'OTP verified successfully',
             EC: 0,
-            DT: null
+            DT: user
         };
     } catch (error) {
         console.error('Verify OTP error:', error);
@@ -68,45 +71,41 @@ const verifyAndClearOTP = async (email, otp) => {
 
 const registerNewUser = async (rawUserData) => {
     try {
-        // First verify OTP
+        // Xác thực OTP
         const otpResult = await verifyAndClearOTP(rawUserData.email, rawUserData.otp);
         if (otpResult.EC !== 0) {
-            return {
-                EM: otpResult.EM,
-                EC: otpResult.EC,
-                DT: otpResult.DT
-            };
+            return otpResult;
         }
 
-        // Continue with existing registration logic
-        let isEmailExist = await checkEmailExist(rawUserData.email);
-        if (isEmailExist) {
+        const user = otpResult.DT;
+        
+        // Kiểm tra xem user đã có password chưa (đã đăng ký chưa)
+        if (user.password) {
             return {
-                EM: 'The email already exists',
+                EM: 'This email is already registered',
                 EC: 1,
-                DT: '',
+                DT: null
             };
         }
 
+        // Hoàn tất đăng ký với password mới
         let hashPassword = hashUserPassword(rawUserData.password);
-        await db.User.create({
-            email: rawUserData.email,
+        await user.update({
             password: hashPassword,
-            roleId: 2
+            roleId: 2 // default role
         });
 
         return {
-            EM: 'User created successfully!',
+            EM: 'User registered successfully!',
             EC: 0,
-            DT: '',
+            DT: null
         };
-
     } catch (e) {
         console.log(e);
         return {
             EM: 'Something went wrong in service.',
             EC: -1,
-            DT: '',
+            DT: null
         };
     }
 }
@@ -348,25 +347,27 @@ const updateCookies = async (refresh_token) => {
 
 const saveResetPasswordCode = async (email, otp) => {
     try {
-        // Find or create user
-        let [user, created] = await db.User.findOrCreate({
-            where: { email: email },
-            defaults: {
-                email: email,
-                roleId: 2, // Default role
-                codeResetPassword: otp
-            }
+        const existingUser = await db.User.findOne({
+            where: { email: email }
         });
 
-        if (!created) {
-            // If user exists, update the OTP
-            await user.update({
+        if (existingUser && existingUser.password) {
+            // Nếu user đã tồn tại (đã đăng ký), cập nhật OTP cho reset password
+            await existingUser.update({
                 codeResetPassword: otp,
+                otpExpiresAt: new Date(Date.now() + 60000) // OTP hết hạn sau 1 phút
+            });
+        } else {
+            // Nếu user chưa tồn tại hoặc chưa có password (chưa đăng ký), tạm lưu OTP
+            await db.User.upsert({
+                email: email,
+                codeResetPassword: otp,
+                otpExpiresAt: new Date(Date.now() + 60000) // OTP hết hạn sau 1 phút
             });
         }
 
         return {
-            EM: created ? 'New user created with reset code' : 'Reset password code saved successfully',
+            EM: 'OTP code saved successfully',
             EC: 0,
             DT: null
         };

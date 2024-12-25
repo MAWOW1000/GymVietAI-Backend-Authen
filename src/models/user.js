@@ -39,6 +39,7 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 'https://imgcdn.stablediffusionweb.com/2024/5/17/f5fb790b-36d9-4504-9ad0-d1142269fe98.jpg'
     },
     codeResetPassword: DataTypes.STRING,
+    otpExpiresAt: DataTypes.DATE,  // Thêm trường mới
     createdWorkoutPlans: {
       type: DataTypes.TEXT,
       defaultValue: '[]',

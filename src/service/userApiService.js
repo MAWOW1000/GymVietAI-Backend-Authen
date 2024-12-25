@@ -284,7 +284,7 @@ const deleteUser = async (userId) => {
     }
 }
 
-const addExercise = async (email, workoutPlanId) => {
+const addWorkoutPlan = async (email, workoutPlanId) => {
     try {
         const user = await db.User.findOne({
             where: { email: email }
@@ -324,7 +324,7 @@ const addExercise = async (email, workoutPlanId) => {
     }
 };
 
-const addMealPlan = async (email, mealPlanId) => {
+const addNutritionPlan = async (email, nutritionPlanId) => {
     try {
         const user = await db.User.findOne({
             where: { email: email }
@@ -342,7 +342,7 @@ const addMealPlan = async (email, mealPlanId) => {
         const currentMealPlans = user.createdNutritionPlans || [];
 
         // Add new meal plan ID to array
-        currentMealPlans.push(mealPlanId);
+        currentMealPlans.push(nutritionPlanId);
 
         // Update user
         await user.update({
@@ -352,7 +352,7 @@ const addMealPlan = async (email, mealPlanId) => {
         return {
             EM: 'Meal plan added successfully',
             EC: 0,
-            DT: mealPlanId
+            DT: nutritionPlanId
         };
     } catch (error) {
         console.error('Add meal plan error:', error);
@@ -445,7 +445,7 @@ module.exports = {
     createNewUser,
     updateUser,
     deleteUser,
-    addExercise,
-    addMealPlan,
+    addWorkoutPlan,
+    addNutritionPlan,
     getUserByEmail
 }

@@ -33,8 +33,8 @@ const initApiRoutes = (app) => {
     router.post('/user/create', userController.createFunc);  // Create new user
     router.put('/user/update', userController.updateFunc);  // Update user
     router.delete('/user/delete', userController.deleteFunc);  // Delete user
-    router.post('/user/add-exercise', userController.addExerciseFunc); // Add new route
-    router.post('/user/add-meal-plan', userController.addMealPlanFunc); // Add new route
+    router.post('/user/add-workout-plan', userController.addWorkoutPlanFunc); // Add new route
+    router.post('/user/add-nutrition-plan', userController.addNutritionPlanFunc); // Add new route
 
     // Role routes
     router.get('/role/read', roleController.readFunc);
