@@ -198,7 +198,7 @@ const handleLogin = async (req, res) => {
             });
         }
 
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&<>])[A-Za-z\d@$!%*?&<>]{8,}$/;
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!#$%^&*()_+={}\[\]:;"'<>,.?~`-])[A-Za-z\d!#$%^&*()_+={}\[\]:;"'<>,.?~`-]{8,}$/;
         if (!passwordRegex.test(password)) {
             return res.status(400).json({
                 EM: 'Password must be at least 8 characters long, contain uppercase, lowercase, number, and special character',
