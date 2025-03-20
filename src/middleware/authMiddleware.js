@@ -185,7 +185,6 @@ const verifyJWT = async (req, res, next) => {
         // Get token from header or cookie
         const token = req.headers.authorization?.split(' ')[1] ||
             req.cookies['access-token'];
-
         if (!token) {
             return res.status(401).json({
                 EM: 'No token provided',
